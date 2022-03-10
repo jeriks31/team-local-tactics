@@ -1,12 +1,12 @@
 from collections import Callable
-from random import randint as genereateClientId
+from random import randint as generateClientId
 import socket
 import threading
 import common
 
-def _handle_client(connection:socket.socket, address:socket.AddressFamily, onClientMessage:Callable[[int, str, list[str]], str]):
+def _handle_client(connection: socket.socket, address:socket.AddressFamily, onClientMessage:Callable[[int, str, list[str]], str]):
     # Help application identify client id
-    _clientId = genereateClientId(0, 9999)
+    _clientId = generateClientId(0, 9999)
 
     try:
         print(f"[{address[0]}] Connected")
@@ -31,7 +31,7 @@ def _handle_client(connection:socket.socket, address:socket.AddressFamily, onCli
         onClientMessage(_clientId, common.MSG_DISCONNECT, [])
         print(f"[{address[0]}] Disconnected")
 
-def start(onClientMessage:Callable[[int, str, list[str]], str]) -> None:
+def start(onClientMessage: Callable[[int, str, list[str]], str]) -> None:
     HOST = "localhost"
 
     # Configure server

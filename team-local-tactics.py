@@ -6,7 +6,7 @@ from storage import load_champions
 from core import Champion, Match, Shape, Team
 
 
-def print_available_champs(champions: dict[Champion]) -> None:
+def print_available_champs(champions: dict[str, Champion]) -> None:
 
     # Create a table containing available champions
     available_champs = Table(title='Available champions')
@@ -27,7 +27,7 @@ def print_available_champs(champions: dict[Champion]) -> None:
 
 def input_champion(prompt: str,
                    color: str,
-                   champions: dict[Champion],
+                   champions: dict[str, Champion],
                    player1: list[str],
                    player2: list[str]) -> None:
 
@@ -111,8 +111,8 @@ def main() -> None:
 
     # Match
     match = Match(
-        Team([champions[name] for name in player1]),
-        Team([champions[name] for name in player2])
+        Team("Red", [champions[name] for name in player1]),
+        Team("Red", [champions[name] for name in player2])
     )
     match.play()
 
