@@ -6,7 +6,7 @@ def _parse_champion(championText: str) -> Champion:
 
 def _parse_match(matchText: str) -> tuple[str,str,int,int]:
     red_name, blue_name, red_score, blue_score = matchText.split(sep=',')
-    return Champion(name, float(rock), float(paper), float(scissors))
+    return red_name, blue_name, red_score, blue_score
 
 def load_champions() -> dict[str, Champion]:
     champions = {}
