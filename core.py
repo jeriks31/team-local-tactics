@@ -150,9 +150,10 @@ class Team:
     Support interating over the team. Each time the iteration begins 
     the list of champions is shuffled.
     """
+    name:str
 
     champions: list[Champion]
-
+    
     def __iter__(self) -> list[Champion]:
         shuffle(self.champions)
         return iter(self.champions)
