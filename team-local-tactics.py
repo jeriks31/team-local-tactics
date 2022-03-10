@@ -34,16 +34,13 @@ def input_champion(prompt: str,
     # Prompt the player to choose a champion and provide the reason why
     # certain champion cannot be selected
     while True:
-        match Prompt.ask(f'[{color}]{prompt}'):
-            case name if name not in champions:
-                print(f'The champion {name} is not available. Try again.')
-            case name if name in player1:
-                print(f'{name} is already in your team. Try again.')
-            case name if name in player2:
-                print(f'{name} is in the enemy team. Try again.')
-            case _:
-                player1.append(name)
-                break
+        name = Prompt.ask(f'[{color}]{prompt}')
+        if name not in champions: print(f'The champion {name} is not available. Try again.')
+        elif name in player1: print(f'{name} is already in your team. Try again.')
+        elif name in player2: print(f'{name} is in the enemy team. Try again.')
+        else:
+            player1.append(name)
+            break
 
 
 def print_match_summary(match: Match) -> None:
@@ -98,7 +95,7 @@ def main() -> None:
           'Each player choose a champion each time.'
           '\n')
 
-    champions = load_some_champs()
+    champions = load_champions()
     print_available_champs(champions)
     print('\n')
 
