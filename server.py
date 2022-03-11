@@ -99,3 +99,6 @@ def identifyPlayer(client:tuple[socket.socket, str], defaultName:str) -> str:
     _, args = net.receive_message(connection, expectMessage=net.MSG_IDENTIFY, expectArgs=1)
     print(f"[{addr}] Identified as '{args[0]}'")    
     return args[0]
+
+if __name__ == "__main__":
+    start()

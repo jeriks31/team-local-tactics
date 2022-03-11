@@ -127,3 +127,6 @@ def show_match_result(self_name:str, match:Match):
     isRed = self_name == match.red_team.name
     message = messageWin if isRed and redWon or (not isRed) and (not redWon) else messageLoose
     print(message)
+
+if __name__ == "__main__":
+    connect()
