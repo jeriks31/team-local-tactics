@@ -1,7 +1,7 @@
 from core import Champion, Match
 from parsing import parse_champions, serialize_champions, parse_match, serialize_match
 
-DIR = 'team-local-tactics\\storage'
+DIR = 'storage'
 
 def load_champions() -> dict[str, Champion]:
     with open(f'{DIR}\\champions.csv', 'r') as file:
