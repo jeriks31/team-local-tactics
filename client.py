@@ -4,38 +4,32 @@ from rich.prompt import Prompt
 from rich.table import Table
 from core import Champion
 import json
-import common
+import networking as net
 import socket
+import parsing
 
-_connection: socket.socket = None
 msg_welcome = '\nWelcome to [bold yellow]Team Local Tactics[/bold yellow]!\nEach player choose a champion each time.\n'
-
 
 def connect() -> None:
     """Connects to the server. If server is connected, the previous connection is disconnected."""
-    global _connection
-    if _connection is not None:
-        disconnect()
-
     HOST = "localhost"
-    _connection =  common.new_connection()
-    _connection.connect((HOST, common.PORT))
+    connection = net.new_connection()
+    connection.connect((HOST, net.PORT))
     while True:
-        handleMessage()
+        handleMessage(connection)
 
-def handleMessage():
-    global _connection
-    message, args = common.receive_message(_connection)
+def handleMessage(connection:socket.socket):
+    message, args = net.receive_message(connection)
 
-    if message == common.MSG_MATCH_STARTED:
+    if message == net.MSG_MATCH_STARTED:
         print(msg_welcome)
-        champions = common.json_parse_champions(args[0])
+        champions = net.parse_champions(args[0])
         print_available_champs(champions)
-    elif message == common.MSG_PICK_CHAMPION:
-        champions = common.json_parse_champions(args[0])
+    elif message == net.MSG_PICK_CHAMPION:
+        champions = net.parse_champions(args[0])
         self_chosen = json.loads(args[1])
         enemy_chosen = json.loads(args[2])
-        input_champion(champions, self_chosen, enemy_chosen)
+        input_champion(connection, champions, self_chosen, enemy_chosen)
 
 
 def print_available_champs(champions: dict[str, Champion]) -> None:
@@ -56,10 +50,10 @@ def print_available_champs(champions: dict[str, Champion]) -> None:
     print(available_champs)
 
 
-def input_champion(champions: dict[str, Champion],
+def input_champion(connection: socket.socket,
+                   champions: dict[str, Champion],
                    self_chosen: list[str],
                    enemy_chosen: list[str]) -> None:
-    global _connection
     # Prompt the player to choose a champion and provide the reason why
     # certain champion cannot be selected
     while True:
@@ -68,5 +62,5 @@ def input_champion(champions: dict[str, Champion],
         elif name in self_chosen: print(f'{name} is already in your team. Try again.')
         elif name in enemy_chosen: print(f'{name} is in the enemy team. Try again.')
         else:
-            common.send_message(_connection, common.MSG_PICKED_CHAMPION, [name])
+            net.send_message(connection, net.MSG_PICKED_CHAMPION, [name])
             break
