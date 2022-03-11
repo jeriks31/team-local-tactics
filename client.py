@@ -8,13 +8,14 @@ import socket
 import parsing
 
 msg_welcome = '\nWelcome to [bold yellow]Team Local Tactics[/bold yellow]!\nEach player choose a champion each time.\n'
+game_not_ended = True
 
 def connect() -> None:
     """Connects to the server. If server is connected, the previous connection is disconnected."""
     HOST = "localhost"
     connection = net.new_connection()
     connection.connect((HOST, net.PORT))
-    while True:
+    while game_not_ended:
         handleMessage(connection)
 
 def handleMessage(connection:socket.socket):
@@ -44,6 +45,8 @@ def handleMessage(connection:socket.socket):
         self_name = args[0]
         match = parsing.parse_full_match(args[1])
         show_match_result(self_name, match)
+        global game_not_ended
+        game_not_ended = False
 
 def identify(connection: socket.socket, default:str) -> None:
     name = Prompt.ask(f'[blue]Pick a nickname', default=default, show_default=True)
