@@ -3,7 +3,14 @@
 
 A game for the mandatory assignment
 
-#### Scripts:
-Database: storage.py \
-Server: networking/server.py \
-Client: networking/client.py
+### How to run:
+1. Run server
+  - Open a terminal 
+  - Navigate to root folder `team-local-tactics/`
+  - Run server with `py server.py`
+2. Run clients
+  - Open two seperate terminals
+  - Navigate to root folder `team-local-tactics/`
+  - Run clients with `py client.py`
+
+Client will attempt to autoconnect on run, so server must be running before you can run the client
