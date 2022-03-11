@@ -72,5 +72,6 @@ def parse_full_match(matchText:str):
                 if len(faceOff) > 0:
                     champions, redThrowText, blueThrowText = faceOff.split('+')
                     round[champions] = PairThrow(int(redThrowText), int(blueThrowText))
+            match._rounds.append(round)
     
     return match
