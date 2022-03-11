@@ -68,8 +68,9 @@ def play_game(player1:tuple[socket.socket, str], player2:tuple[socket.socket, st
     
     print(f"[Server] Match is done. Score: ('{player1[1]}':{player1_score}) ('{player2[1]}':{player2_score})")
 
-    net.send_message(player1[0], net.MSG_MATCH_ENDED, [player1_score, player2_score])
-    net.send_message(player2[0], net.MSG_MATCH_ENDED, [player2_score, player1_score])
+    matchJson = json.dumps(match)
+    net.send_message(player1[0], net.MSG_MATCH_ENDED, [player1_name, matchJson])
+    net.send_message(player2[0], net.MSG_MATCH_ENDED, [player2_name, matchJson])
 
     print(f"[Server] Players have been notified: Match is ended")
 
