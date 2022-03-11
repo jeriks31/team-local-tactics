@@ -132,3 +132,6 @@ dmypy.json
 
 #PyCharm project settings
 .idea/
+
+# TNT match history
+storage/matches.csv
