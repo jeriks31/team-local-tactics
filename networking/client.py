@@ -1,4 +1,4 @@
-from collections import Callable
+from collections.abc import Callable
 from rich import print
 from rich.prompt import Prompt
 from rich.table import Table
@@ -8,6 +8,7 @@ import socket
 
 onMessage: Callable[[socket.socket, str, list[str]], None] = None
 _connection: socket.socket = None
+msg_welcome = '\nWelcome to [bold yellow]Team Local Tactics[/bold yellow]!\nEach player choose a champion each time.\n'
 
 
 def disconnect() -> None:
@@ -29,6 +30,8 @@ def connect() -> None:
     HOST = "localhost"
     _connection =  socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     _connection.connect((HOST, common.PORT))
+    while True:
+        recvMessage()
 
 
 def sendMessage(message: str, args: list[str]) -> str:
@@ -40,10 +43,23 @@ def sendMessage(message: str, args: list[str]) -> str:
     if _connection is None:
         connect()
 
-    request = f"{message}:{'|'.join(args)}"
+    request = f"{message}{common.MSG_CMD_SEP}{common.MSG_ARG_SEP.join(args)}"
     _connection.send(request.encode("utf8"))
     response = _connection.recv(common.MSG_SIZE).decode("utf8")
     return response
+
+
+def recvMessage():
+    packet = _connection.recv(common.MSG_SIZE).decode("utf8").split(common.MSG_CMD_SEP)
+    message = packet[0]
+    args = packet[1].split(common.MSG_ARG_SEP)
+    if message == "INITIAL_PRINTS":
+        print(msg_welcome)
+        champions = {}
+        for championText in args:
+            champion = common.parse_champion(championText)
+            champions[champion.name] = champion
+        print_available_champs(champions)
 
 
 def print_available_champs(champions: dict[str, Champion]) -> None:
