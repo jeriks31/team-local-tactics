@@ -3,6 +3,7 @@ from rich import print
 from rich.prompt import Prompt
 from rich.table import Table
 from core import Champion
+import json
 import common
 import socket
 
@@ -53,17 +54,19 @@ def recvMessage():
     packet = _connection.recv(common.MSG_SIZE).decode("utf8").split(common.MSG_CMD_SEP)
     message = packet[0]
     args = packet[1].split(common.MSG_ARG_SEP)
+
     if message == "INITIAL_PRINTS":
         print(msg_welcome)
-        champions = {}
-        for championText in args:
-            champion = common.parse_champion(championText)
-            champions[champion.name] = champion
+        champions = common.json_parse_champions(args[0])
         print_available_champs(champions)
+    elif message == "PICK_CHAMPION":
+        champions = common.json_parse_champions(args[0])
+        self_chosen = json.loads(args[1])
+        enemy_chosen = json.loads(args[2])
+        input_champion(champions, self_chosen, enemy_chosen)
 
 
 def print_available_champs(champions: dict[str, Champion]) -> None:
-
     # Create a table containing available champions
     available_champs = Table(title='Available champions')
 
@@ -81,19 +84,17 @@ def print_available_champs(champions: dict[str, Champion]) -> None:
     print(available_champs)
 
 
-def input_champion(prompt: str,
-                   color: str,
-                   champions: dict[str, Champion],
-                   player1: list[str],
-                   player2: list[str]) -> None:
+def input_champion(champions: dict[str, Champion],
+                   self_chosen: list[str],
+                   enemy_chosen: list[str]) -> None:
 
     # Prompt the player to choose a champion and provide the reason why
     # certain champion cannot be selected
     while True:
-        name = Prompt.ask(f'[{color}]{prompt}')
+        name = Prompt.ask(f'[blue]Pick Champion')
         if name not in champions: print(f'The champion {name} is not available. Try again.')
-        elif name in player1: print(f'{name} is already in your team. Try again.')
-        elif name in player2: print(f'{name} is in the enemy team. Try again.')
+        elif name in self_chosen: print(f'{name} is already in your team. Try again.')
+        elif name in enemy_chosen: print(f'{name} is in the enemy team. Try again.')
         else:
-            player1.append(name)
+            _connection.send(name)  # TODO
             break

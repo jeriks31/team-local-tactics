@@ -2,6 +2,7 @@ from collections.abc import Callable
 from random import randint as generateClientId
 from core import Match, Team, Champion
 from storage import load_champions
+import json
 import socket
 import threading
 import common
@@ -65,9 +66,8 @@ def start(onClientMessage: Callable[[int, str, list[str]], str]) -> None:
 def rungame() -> None:
     champions = load_champions()
 
-    stringified_champions = [common.stringify_champion(c) for c in champions.values()]
     for conn, addr in connections:
-        conn.send("INITIAL_PRINTS" + common.MSG_CMD_SEP + common.MSG_ARG_SEP.join(stringified_champions))  # Tell clients to print the welcome msg and available champions
+        conn.send("INITIAL_PRINTS" + common.MSG_CMD_SEP + common.json_stringify_champion(champions))
 
     player1 = []
     player2 = []
@@ -85,7 +85,14 @@ def rungame() -> None:
     match.play()
 
     for conn, addr in connections:
-        conn.send(match) #Tell client to print match summary
+        conn.send(match)  # TODO: Tell client to print match summary
+
 
 def requestChampionPick(conn, champions, self_chosen, enemy_chosen) -> None:
-    pass
+    _champions = common.json_stringify_champion(champions)
+    _self_chosen = json.dumps(self_chosen)
+    _enemy_chosen = json.dumps(enemy_chosen)
+    conn.send("PICK_CHAMPION" + common.MSG_CMD_SEP + common.MSG_ARG_SEP.join([_champions, _self_chosen, _enemy_chosen]))
+
+    response = conn.recv(common.MSG_SIZE)
+    # TODO: Receive champion in response and add it to self_chosen
