@@ -1,6 +1,6 @@
 from collections.abc import Callable
 from rich import print
-from rich.prompt import Prompt
+from rich.prompt import Prompt, Confirm
 from rich.table import Table
 from core import Champion
 import json
@@ -21,18 +21,37 @@ def connect() -> None:
 def handleMessage(connection:socket.socket):
     message, args = net.receive_message(connection)
 
-    if message == net.MSG_MATCH_STARTED:
+    if message == net.MSG_IDENTIFY:
+        default = args[0]
+        identify(connection, default)
+
+    elif message == net.MSG_ENEMY_IDENTITY:
+        name = args[0]
+        show_enemy_name(name)
+
+    elif message == net.MSG_MATCH_STARTED:
         print(msg_welcome)
         champions = net.parse_champions(args[0])
-        print_available_champs(champions)
+        show_champions(champions)
+
     elif message == net.MSG_PICK_CHAMPION:
         champions = net.parse_champions(args[0])
         self_chosen = json.loads(args[1])
         enemy_chosen = json.loads(args[2])
-        input_champion(connection, champions, self_chosen, enemy_chosen)
+        pick_champion(connection, champions, self_chosen, enemy_chosen)
 
+    elif message == net.MSG_MATCH_ENDED:
+        self_score = float(args[0])
+        enemy_score = float(args[1])
 
-def print_available_champs(champions: dict[str, Champion]) -> None:
+def identify(connection: socket.socket, default:str) -> None:
+    name = Prompt.ask(f'[blue]Pick a nickname', default=default, show_default=True)
+    net.send_message(connection, net.MSG_IDENTIFY, [name])
+
+def show_enemy_name(name:str):
+    print(f"[bold red] Your enemy is: {name}")
+
+def show_champions(champions: dict[str, Champion]) -> None:
     # Create a table containing available champions
     available_champs = Table(title='Available champions')
 
@@ -49,8 +68,7 @@ def print_available_champs(champions: dict[str, Champion]) -> None:
 
     print(available_champs)
 
-
-def input_champion(connection: socket.socket,
+def pick_champion(connection: socket.socket,
                    champions: dict[str, Champion],
                    self_chosen: list[str],
                    enemy_chosen: list[str]) -> None:

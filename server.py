@@ -34,6 +34,12 @@ def play_game(player1:tuple[socket.socket, str], player2:tuple[socket.socket, st
     champions = load_champions()
     print(f"[Server] Loaded {len(champions)} champions")
 
+    player1_name = identifyPlayer(player1, "Red")
+    player2_name = identifyPlayer(player2, "Blue")
+
+    net.send_message(player1[0], net.MSG_ENEMY_IDENTITY, [player2_name])
+    net.send_message(player2[0], net.MSG_ENEMY_IDENTITY, [player1_name])
+
     net.send_message(player1[0], net.MSG_MATCH_STARTED, [parsing.serialize_champions(champions)])
     net.send_message(player2[0], net.MSG_MATCH_STARTED, [parsing.serialize_champions(champions)])
 
@@ -53,8 +59,8 @@ def play_game(player1:tuple[socket.socket, str], player2:tuple[socket.socket, st
 
     # Match
     match = Match(
-        Team("Red", [champions[name] for name in player1_champions]),
-        Team("Blue", [champions[name] for name in player2_champions])
+        Team(player1_name, [champions[name] for name in player1_champions]),
+        Team(player2_name, [champions[name] for name in player2_champions])
     )
     match.play()
 
@@ -71,7 +77,7 @@ def play_game(player1:tuple[socket.socket, str], player2:tuple[socket.socket, st
     player2[0].close()
 
 def requestChampionPick(client:tuple[socket.socket, str], champions:list[Champion], self_chosen:list[Champion], enemy_chosen:list[Champion]) -> None:
-    conn, addr = client
+    connection, addr = client
 
     # Let client pick champion
     _champions = parsing.serialize_champions(champions)
@@ -81,9 +87,14 @@ def requestChampionPick(client:tuple[socket.socket, str], champions:list[Champio
     print(f"[Server] '{addr}' is picking a champion")
 
     # Handle client picked champion
-    message, args = net.receive_message(conn)
-    if message != net.MSG_PICKED_CHAMPION: raise f"Unexpected message from client: {message}"
-    if len(args) != 1: raise f"Unexpected number of arguments from client. Expected 1, but was {len(args)}"
+    _, args = net.receive_message(connection, expectMessage=net.MSG_PICKED_CHAMPION, expectArgs=1)
     champion_name = args[0]
     self_chosen.append(champion_name)
     print(f"[{addr}] Picked champion: {champion_name}")
+
+def identifyPlayer(client:tuple[socket.socket, str], defaultName:str) -> str:
+    connection, addr = client
+    net.send_message(connection, net.MSG_IDENTIFY, [defaultName])
+    _, args = net.receive_message(connection, expectMessage=net.MSG_IDENTIFY, expectArgs=1)
+    print(f"[{addr}] Identified as '{args[0]}'")    
+    return args[0]
