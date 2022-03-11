@@ -1,9 +1,5 @@
 from core import Champion, Match
-
-
-def _parse_champion(championText: str) -> Champion:
-    name, rock, paper, scissors = championText.split(sep=',')
-    return Champion(name, float(rock), float(paper), float(scissors))
+from networking.common import parse_champion, stringify_champion
 
 
 def _parse_match(matchText: str) -> tuple[str,str,int,int]:
@@ -15,7 +11,7 @@ def load_champions() -> dict[str, Champion]:
     champions = {}
     with open('storage\\champions.csv', 'r') as file:
         for championText in file.readlines():
-            champion = _parse_champion(championText)
+            champion = parse_champion(championText)
             champions[champion.name] = champion
     return champions
 
@@ -27,6 +23,12 @@ def load_matches() -> list[tuple[str,str,float,float]]:
             match = _parse_match(matchText)
             matches.append(match)
     return matches
+
+
+def save_champions(champions: dict[str, Champion]) -> None:
+    with open('storage\\champions.csv', 'w') as file:
+        stringified_champions = [stringify_champion(c) for c in champions.values()]
+        file.writelines(stringified_champions)
 
 
 def save_match(match: Match) -> None:

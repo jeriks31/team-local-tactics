@@ -1,3 +1,5 @@
+from core import Champion
+
 PORT = 5522
 """Server will be listening on this port."""
 MSG_SIZE = 2048
@@ -14,3 +16,12 @@ MSG_DISCONNECT = "DISCONNECT"
 
 MSG_CONNECT = "CONNECT"
 """From client to server: Signals a client has connected."""
+
+
+def parse_champion(championText: str) -> Champion:
+    name, rock, paper, scissors = championText.split(sep=',')
+    return Champion(name, float(rock), float(paper), float(scissors))
+
+
+def stringify_champion(champion: Champion) -> str:
+    return ",".join(champion.str_tuple)
