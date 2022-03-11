@@ -7,92 +7,85 @@ import socket
 import threading
 import common
 
-connections: list[tuple[socket.socket, str]] = []
-
-
-def _handle_client(connection: socket.socket, address:socket.AddressFamily, onClientMessage:Callable[[int, str, list[str]], str]):
-    # Help application identify client id
-    _clientId = generateClientId(0, 9999)
-
-    try:
-        print(f"[{address[0]}] Connected")
-
-        # Let game know client has connected
-        onClientMessage(_clientId, common.MSG_CONNECT, [])
-
-        # Handle connection messages
-        while True:
-            request = connection.recv(common.MSG_SIZE).decode("utf8").split(sep=common.MSG_CMD_SEP)
-            print(f"[{address[0]}] '{request}'")
-
-            message, args = (request[0], request[1].split(sep=common.MSG_ARG_SEP)) if len(request) > 1 else (request[0], []) 
-            if request[0] == common.MSG_DISCONNECT: break
-            response = onClientMessage(_clientId, message, args)
-            connection.send(response.encode("utf8"))
-
-    except ConnectionError:
-        print(f"[{address[0]}] Connection closed unexpectedly")
-    finally:
-        connection.close()
-        onClientMessage(_clientId, common.MSG_DISCONNECT, [])
-        print(f"[{address[0]}] Disconnected")
-
-
-def start(onClientMessage: Callable[[int, str, list[str]], str]) -> None:
+def start() -> None:
+    """Starts the server."""
     HOST = "localhost"
 
     # Configure server
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
+    with common.new_connection() as server:
         server.bind((HOST, common.PORT))
         server.listen()
 
         print(f"[Server] Started on {HOST}:{common.PORT}")
         
+
         # Handle connection requests
         while True:
-            connection, address = server.accept()
-            connections.insert((connection, address))
-            if len(connections) >= 2:
-                rungame()
-
-            # Handle connection single threaded
-            # _handle_client(connection, address, onClientMessage)
-
-            # Handle connection multi threaded
-            # thread = threading.Thread(target=_handle_client, args=(connection, address, onClientMessage))
-            # thread.start()
+            connections: list[tuple[socket.socket, str]] = []
+            for _ in range(2):
+                connection, address = server.accept()
+                connections.append((connection, address))
+            play_game(connections[0], connections[1])
 
 
-def rungame() -> None:
+def play_game(player1:tuple[socket.socket, str], player2:tuple[socket.socket, str]) -> None:
+    """Plays a game. Requires two connected players."""
+
+    print(f"[Server] Game started: {player1[1]} vs {player2[1]}")
+
     champions = load_champions()
+    print(f"[Server] Loaded {len(champions)} champions")
 
-    for conn, addr in connections:
-        conn.send("INITIAL_PRINTS" + common.MSG_CMD_SEP + common.json_stringify_champion(champions))
+    common.send_message(player1[0], common.MSG_MATCH_STARTED, [common.json_stringify_champion(champions)])
+    common.send_message(player2[0], common.MSG_MATCH_STARTED, [common.json_stringify_champion(champions)])
 
-    player1 = []
-    player2 = []
+    print(f"[Server] Players have been notified: Match has started")
+    print(f"[Server] Picking champions")
+
+    player1_champions = []
+    player2_champions = []
 
     # Champion selection
     for _ in range(2):
-        requestChampionPick(connections[0][0], champions, player1, player2)
-        requestChampionPick(connections[1][0], champions, player2, player1)
+        requestChampionPick(player1, champions, player1_champions, player2_champions)
+        requestChampionPick(player2, champions, player2_champions, player1_champions)
+
+    print(f"[Server] All champions have been picked")
+    print(f"[Server] Match is starting")
 
     # Match
     match = Match(
-        Team("Red", [champions[name] for name in player1]),
-        Team("Red", [champions[name] for name in player2])
+        Team("Red", [champions[name] for name in player1_champions]),
+        Team("Blue", [champions[name] for name in player2_champions])
     )
     match.play()
 
-    for conn, addr in connections:
-        conn.send(match)  # TODO: Tell client to print match summary
+    player1_score, player2_score = match.score()
+    
+    print(f"[Server] Match is done. Score: ('{player1[1]}':{player1_score}) ('{player2[1]}':{player2_score})")
 
+    common.send_message(player1[0], common.MSG_MATCH_ENDED, [player1_score, player2_score])
+    common.send_message(player2[0], common.MSG_MATCH_ENDED, [player2_score, player1_score])
 
-def requestChampionPick(conn, champions, self_chosen, enemy_chosen) -> None:
+    print(f"[Server] Players have been notified: Match is ended")
+
+    player1[0].close()
+    player2[0].close()
+
+def requestChampionPick(client:tuple[socket.socket, str], champions:list[Champion], self_chosen:list[Champion], enemy_chosen:list[Champion]) -> None:
+    conn, addr = client
+
+    # Let client pick champion
     _champions = common.json_stringify_champion(champions)
     _self_chosen = json.dumps(self_chosen)
     _enemy_chosen = json.dumps(enemy_chosen)
-    conn.send("PICK_CHAMPION" + common.MSG_CMD_SEP + common.MSG_ARG_SEP.join([_champions, _self_chosen, _enemy_chosen]))
+    common.send_message(conn, common.MSG_PICK_CHAMPION, [_champions, _self_chosen, _enemy_chosen])
+    print(f"[Server] '{addr}' is picking a champion")
 
-    response = conn.recv(common.MSG_SIZE)
-    # TODO: Receive champion in response and add it to self_chosen
+    # Handle client picked champion
+    message, args = common.receive_message(conn)
+    if message != common.MSG_PICKED_CHAMPION: raise f"Unexpected message from client: {message}"
+    if len(args) != 1: raise f"Unexpected number of arguments from client. Expected 1, but was {len(args)}"
+    champion_name = args[0]
+    self_chosen.append(champion_name)
+    print(f"[{addr}] Picked champion: {champion_name}")

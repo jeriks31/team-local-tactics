@@ -7,19 +7,8 @@ import json
 import common
 import socket
 
-onMessage: Callable[[socket.socket, str, list[str]], None] = None
 _connection: socket.socket = None
 msg_welcome = '\nWelcome to [bold yellow]Team Local Tactics[/bold yellow]!\nEach player choose a champion each time.\n'
-
-
-def disconnect() -> None:
-    """Disconnect from the server. If server is not connected, this has no effect."""
-    global _connection
-    if _connection is None:
-        return
-    
-    _connection.close()
-    _connection = None
 
 
 def connect() -> None:
@@ -29,37 +18,20 @@ def connect() -> None:
         disconnect()
 
     HOST = "localhost"
-    _connection =  socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    _connection =  common.new_connection()
     _connection.connect((HOST, common.PORT))
     while True:
-        recvMessage()
+        handleMessage()
 
-
-def sendMessage(message: str, args: list[str]) -> str:
-    """Sends a request to the server. Returns the response."""
+def handleMessage():
     global _connection
-    if message == common.MSG_DISCONNECT:
-        disconnect()
-        return
-    if _connection is None:
-        connect()
+    message, args = common.receive_message(_connection)
 
-    request = f"{message}{common.MSG_CMD_SEP}{common.MSG_ARG_SEP.join(args)}"
-    _connection.send(request.encode("utf8"))
-    response = _connection.recv(common.MSG_SIZE).decode("utf8")
-    return response
-
-
-def recvMessage():
-    packet = _connection.recv(common.MSG_SIZE).decode("utf8").split(common.MSG_CMD_SEP)
-    message = packet[0]
-    args = packet[1].split(common.MSG_ARG_SEP)
-
-    if message == "INITIAL_PRINTS":
+    if message == common.MSG_MATCH_STARTED:
         print(msg_welcome)
         champions = common.json_parse_champions(args[0])
         print_available_champs(champions)
-    elif message == "PICK_CHAMPION":
+    elif message == common.MSG_PICK_CHAMPION:
         champions = common.json_parse_champions(args[0])
         self_chosen = json.loads(args[1])
         enemy_chosen = json.loads(args[2])
@@ -87,7 +59,7 @@ def print_available_champs(champions: dict[str, Champion]) -> None:
 def input_champion(champions: dict[str, Champion],
                    self_chosen: list[str],
                    enemy_chosen: list[str]) -> None:
-
+    global _connection
     # Prompt the player to choose a champion and provide the reason why
     # certain champion cannot be selected
     while True:
@@ -96,5 +68,5 @@ def input_champion(champions: dict[str, Champion],
         elif name in self_chosen: print(f'{name} is already in your team. Try again.')
         elif name in enemy_chosen: print(f'{name} is in the enemy team. Try again.')
         else:
-            _connection.send(name)  # TODO
+            common.send_message(_connection, common.MSG_PICKED_CHAMPION, [name])
             break
