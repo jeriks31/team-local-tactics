@@ -1,5 +1,5 @@
 from core import Match, Team, Champion
-from storage import load_champions
+from storage import load_champions, save_match
 import json
 import socket
 import networking as net
@@ -71,6 +71,8 @@ def play_game(player1:tuple[socket.socket, str], player2:tuple[socket.socket, st
     player1_score, player2_score = match.score
     
     print(f"[Server] Match is done. Score: ('{player1[1]}':{player1_score}) ('{player2[1]}':{player2_score})")
+
+    save_match(match)
 
     matchJson = parsing.serialize_full_match(match)
     net.send_message(player1[0], net.MSG_MATCH_ENDED, [player1_name, matchJson])
