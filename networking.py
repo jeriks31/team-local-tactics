@@ -1,5 +1,3 @@
-from core import Champion
-from json import dumps, loads
 from socket import socket, AF_INET, SOCK_STREAM
 
 PORT = 5522

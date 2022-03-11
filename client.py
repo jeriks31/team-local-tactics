@@ -1,5 +1,5 @@
 from rich import print
-from rich.prompt import Prompt, Confirm
+from rich.prompt import Prompt
 from rich.table import Table
 from core import Champion, Match
 import json
