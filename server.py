@@ -23,6 +23,7 @@ def start() -> None:
             for _ in range(2):
                 connection, address = server.accept()
                 connections.append((connection, address))
+                print(f"[{address}] Connected")
             play_game(connections[0], connections[1])
 
 
@@ -40,8 +41,11 @@ def play_game(player1:tuple[socket.socket, str], player2:tuple[socket.socket, st
     net.send_message(player1[0], net.MSG_ENEMY_IDENTITY, [player2_name])
     net.send_message(player2[0], net.MSG_ENEMY_IDENTITY, [player1_name])
 
-    net.send_message(player1[0], net.MSG_MATCH_STARTED, [parsing.serialize_champions(champions)])
-    net.send_message(player2[0], net.MSG_MATCH_STARTED, [parsing.serialize_champions(champions)])
+    championsText = parsing.serialize_champions(champions)
+    net.send_message(player1[0], net.MSG_MATCH_STARTED, [championsText])
+    waitForOk(player1)
+    net.send_message(player2[0], net.MSG_MATCH_STARTED, [championsText])
+    waitForOk(player2)
 
     print(f"[Server] Players have been notified: Match has started")
     print(f"[Server] Picking champions")
@@ -64,11 +68,11 @@ def play_game(player1:tuple[socket.socket, str], player2:tuple[socket.socket, st
     )
     match.play()
 
-    player1_score, player2_score = match.score()
+    player1_score, player2_score = match.score
     
     print(f"[Server] Match is done. Score: ('{player1[1]}':{player1_score}) ('{player2[1]}':{player2_score})")
 
-    matchJson = json.dumps(match)
+    matchJson = parsing.serialize_full_match(match)
     net.send_message(player1[0], net.MSG_MATCH_ENDED, [player1_name, matchJson])
     net.send_message(player2[0], net.MSG_MATCH_ENDED, [player2_name, matchJson])
 
@@ -84,7 +88,7 @@ def requestChampionPick(client:tuple[socket.socket, str], champions:list[Champio
     _champions = parsing.serialize_champions(champions)
     _self_chosen = json.dumps(self_chosen)
     _enemy_chosen = json.dumps(enemy_chosen)
-    net.send_message(conn, net.MSG_PICK_CHAMPION, [_champions, _self_chosen, _enemy_chosen])
+    net.send_message(connection, net.MSG_PICK_CHAMPION, [_champions, _self_chosen, _enemy_chosen])
     print(f"[Server] '{addr}' is picking a champion")
 
     # Handle client picked champion
@@ -99,6 +103,10 @@ def identifyPlayer(client:tuple[socket.socket, str], defaultName:str) -> str:
     _, args = net.receive_message(connection, expectMessage=net.MSG_IDENTIFY, expectArgs=1)
     print(f"[{addr}] Identified as '{args[0]}'")    
     return args[0]
+
+def waitForOk(client:tuple[socket.socket, str]):
+    connection, addr = client
+    net.receive_message(connection, expectMessage=net.MSG_OK)
 
 if __name__ == "__main__":
     start()

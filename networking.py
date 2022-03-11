@@ -23,7 +23,10 @@ MSG_PICK_CHAMPION = "PICK_CHAMPION"
 MSG_PICKED_CHAMPION = "PICKED_CHAMPION"
 """Client -> Server: A champion is picked."""
 
-def send_message(connection:socket, message:str,args:list[str]) -> None:
+MSG_OK = "OK"
+"""The previous message was OK."""
+
+def send_message(connection:socket, message:str, args:list[str] = []) -> None:
     """Sends a messages through the connection."""
     request = f"{message}:{'|'.join(args)}"
     connection.send(request.encode("utf8"))
@@ -34,8 +37,8 @@ def receive_message(connection:socket, expectMessage:str = None, expectArgs:int 
     message = response[0]
     args = response[1].split('|') if len(response) > 1 else []
 
-    if message != expectMessage: raise f"Unexpected message. Expected '{expectMessage}', but received '{message}'"
-    if len(args) < expectArgs: raise f"Unexpected number of arguments. Expected {expectArgs}, but received {len(args)}"
+    if expectMessage is not None and message != expectMessage: raise Exception(f"Unexpected message. Expected '{expectMessage}', but received '{message}'")
+    if expectArgs is not None and len(args) < expectArgs: raise Exception(f"Unexpected number of arguments. Expected {expectArgs}, but received {len(args)}")
 
     return (message, args)
 

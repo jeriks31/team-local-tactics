@@ -27,21 +27,23 @@ def handleMessage(connection:socket.socket):
     elif message == net.MSG_ENEMY_IDENTITY:
         name = args[0]
         show_enemy_name(name)
+        net.send_message(connection, net.MSG_OK)
 
     elif message == net.MSG_MATCH_STARTED:
         print(msg_welcome)
-        champions = net.parse_champions(args[0])
+        champions = parsing.parse_champions(args[0])
         show_champions(champions)
 
     elif message == net.MSG_PICK_CHAMPION:
-        champions = net.parse_champions(args[0])
+        champions = parsing.parse_champions(args[0])
         self_chosen = json.loads(args[1])
         enemy_chosen = json.loads(args[2])
         pick_champion(connection, champions, self_chosen, enemy_chosen)
 
     elif message == net.MSG_MATCH_ENDED:
         self_name = args[0]
-        match = json.loads(args[1], cls=Match)
+        match = parsing.parse_full_match(args[1])
+        show_match_result(self_name, match)
 
 def identify(connection: socket.socket, default:str) -> None:
     name = Prompt.ask(f'[blue]Pick a nickname', default=default, show_default=True)
@@ -84,9 +86,9 @@ def pick_champion(connection: socket.socket,
 
 def show_match_result(self_name:str, match:Match):
     EMOJI = {
-        Shape.ROCK: ':raised_fist-emoji:',
-        Shape.PAPER: ':raised_hand-emoji:',
-        Shape.SCISSORS: ':victory_hand-emoji:'
+        1: ':raised_fist-emoji:',
+        2: ':raised_hand-emoji:',
+        3: ':victory_hand-emoji:'
     }
 
     # For each round print a table with the results
