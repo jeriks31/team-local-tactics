@@ -9,7 +9,7 @@ A game for the mandatory assignment
   - Navigate to root folder `team-local-tactics/`
   - Run server with `py server.py`
 2. Run clients
-  - Open two seperate terminals
+  - Open two separate terminals
   - Navigate to root folder `team-local-tactics/`
   - Run clients with `py client.py`
 
